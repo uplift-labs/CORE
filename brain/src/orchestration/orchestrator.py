@@ -24,11 +24,15 @@ except ImportError:
 # Configure logger
 logger = logging.getLogger(__name__)
 
-# Suppress the harmless "Event loop is closed" warnings from HTTP client cleanup
+# Suppress verbose third-party library logs
+logging.getLogger("autogen_core").setLevel(logging.WARNING)
+logging.getLogger("autogen_core.events").setLevel(logging.WARNING)
+logging.getLogger("autogen_agentchat").setLevel(logging.WARNING)
 logging.getLogger("asyncio").setLevel(logging.ERROR)
-# Suppress warnings from httpx/httpcore about event loop cleanup
 logging.getLogger("httpx").setLevel(logging.ERROR)
 logging.getLogger("httpcore").setLevel(logging.ERROR)
+logging.getLogger("urllib3").setLevel(logging.ERROR)
+logging.getLogger("websockets").setLevel(logging.WARNING)
 
 # Suppress "Task exception was never retrieved" warnings
 warnings.filterwarnings("ignore", message=".*Task exception was never retrieved.*")

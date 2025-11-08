@@ -14,6 +14,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Suppress verbose third-party library logs
+logging.getLogger("autogen_core").setLevel(logging.WARNING)
+logging.getLogger("autogen_core.events").setLevel(logging.WARNING)
+logging.getLogger("autogen_agentchat").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.ERROR)
+logging.getLogger("httpcore").setLevel(logging.ERROR)
+logging.getLogger("asyncio").setLevel(logging.ERROR)
+logging.getLogger("urllib3").setLevel(logging.ERROR)
+logging.getLogger("websockets").setLevel(logging.WARNING)
+
 # Add current directory to path first for local imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
