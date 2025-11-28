@@ -1,0 +1,26 @@
+[project]
+name = "apis"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "autogen-agentchat==0.7.5",
+    "autogen-core==0.7.5",
+    "autogen-ext==0.7.5",
+    "azure-core>=1.36.0",
+    "flask==3.1.2",
+    "flask-cors==3.0.10",
+    "neo4j==6.0.3",
+    "numpy==2.3.4",
+    "openai==2.7.1",
+    "pandas==2.3.3",
+    "psycopg2-binary>=2.9.11",
+    "pydantic==2.12.4",
+    "pygame==2.6.1",
+    "python-dotenv==1.2.1",
+    "requests==2.32.5",
+    "supabase==2.24.0",
+    "tiktoken>=0.12.0",
+    "websockets==13.1",
+]

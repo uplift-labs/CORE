@@ -36,21 +36,11 @@ if brain_src_path not in sys.path:
     sys.path.insert(1, brain_src_path)
 
 from core.health_service import health_check
-from core.speech_service import SpeechService
-from core.chat_service import ChatService
-from core.auth_service import auth_service, require_auth
+from core.auth_service import require_auth
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-# Initialize services
-try:
-    speech_service = SpeechService()
-    chat_service = ChatService()
-    logger.info("Services initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize services: {e}", exc_info=True)
-    raise
 
 @app.route('/health', methods=['GET'])
 def health_check_endpoint():
@@ -60,28 +50,6 @@ def health_check_endpoint():
     except Exception as e:
         logger.error(f"Health check failed: {e}", exc_info=True)
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
-
-@app.route('/speech-to-text', methods=['POST'])
-@require_auth
-def speech_to_text_endpoint():
-    """Convert audio file to text using Azure Whisper"""
-    try:
-        logger.info(f"Speech-to-text request from user: {request.user_id}")
-        return speech_service.process_speech_to_text()
-    except Exception as e:
-        logger.error(f"Speech-to-text failed for user {request.user_id}: {e}", exc_info=True)
-        return jsonify({"error": "Speech-to-text processing failed"}), 500
-
-@app.route('/text-to-speech', methods=['POST'])
-@require_auth
-def text_to_speech_endpoint():
-    """Convert text to speech using ChatTTS library"""
-    try:
-        logger.info(f"Text-to-speech request from user: {request.user_id}")
-        return speech_service.process_text_to_speech()
-    except Exception as e:
-        logger.error(f"Text-to-speech failed for user {request.user_id}: {e}", exc_info=True)
-        return jsonify({"error": "Text-to-speech processing failed"}), 500
     
 @app.route('/chat', methods=['POST'])
 @require_auth
