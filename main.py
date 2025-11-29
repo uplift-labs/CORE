@@ -73,7 +73,7 @@ def clear_history_endpoint():
     try:
         user_id = request.user_id
         logger.info(f"Clear history request from user: {user_id}")
-        return chat_service.clear_history(user_id)
+        return ChatService().clear_history(user_id)
     except Exception as e:
         logger.error(f"Clear history failed for user {request.user_id}: {e}", exc_info=True)
         return jsonify({"error": "Failed to clear history"}), 500

@@ -21,27 +21,10 @@ from autogen_agentchat.messages import TextMessage, ModelClientStreamingChunkEve
 from autogen_core.model_context import BufferedChatCompletionContext
 from autogen_core.models import UserMessage
 from datetime import datetime
-from orchestration.system_tool import set_access_token, set_device_id, set_user_id
-
-# Import OpenAI exceptions for better error handling
-try:
-    from openai import APIConnectionError, APIError
-except ImportError:
-    APIConnectionError = Exception
-    APIError = Exception
-
+from orchestration.system_tool import set_access_token, set_device_id, set_user_id, execute_system_intent
+from openai import APIConnectionError, APIError
 # Configure logger
 logger = logging.getLogger(__name__)
-
-# Suppress verbose third-party library logs
-logging.getLogger("autogen_core").setLevel(logging.WARNING)
-logging.getLogger("autogen_core.events").setLevel(logging.WARNING)
-logging.getLogger("autogen_agentchat").setLevel(logging.WARNING)
-logging.getLogger("asyncio").setLevel(logging.ERROR)
-logging.getLogger("httpx").setLevel(logging.ERROR)
-logging.getLogger("httpcore").setLevel(logging.ERROR)
-logging.getLogger("urllib3").setLevel(logging.ERROR)
-logging.getLogger("websockets").setLevel(logging.WARNING)
 
 # Suppress "Task exception was never retrieved" warnings
 warnings.filterwarnings("ignore", message=".*Task exception was never retrieved.*")
@@ -216,6 +199,39 @@ class AgentOrchestrator:
                 for tool_response in tool_responses:
                     if tool_response and tool_response not in full_response:
                         full_response += tool_response
+            
+            # Check if assistant response contains execute_system_intent function call as TEXT (not tool call)
+            # Only execute if it's text in the final message and wasn't already executed as a tool
+            if full_response:
+                try:
+                    from orchestration.system_tool import extract_intent_from_text
+                    extracted_intent = extract_intent_from_text(full_response)
+                    if extracted_intent:
+                        # Check if this intent was already executed as a tool call
+                        # If tool_responses is empty or doesn't contain results from execute_system_intent, 
+                        # it means the assistant wrote it as text, not called it as a tool
+                        intent_already_executed = False
+                        if tool_responses:
+                            # Check if any tool response contains results from this intent
+                            for tool_response in tool_responses:
+                                tool_response_str = str(tool_response).lower()
+                                if extracted_intent.lower() in tool_response_str or "executed" in tool_response_str:
+                                    intent_already_executed = True
+                                    break
+                        
+                        # Only execute if it wasn't already executed as a tool call
+                        if not intent_already_executed:
+                            logger.info(f"Detected execute_system_intent as text in assistant response (not tool call), executing: {extracted_intent}")
+                            # Execute the intent
+                            tool_result = await execute_system_intent(extracted_intent)
+                            if tool_result:
+                                # Yield the tool execution result
+                                yield f"\n\n[Executed: {extracted_intent}]\n{tool_result}\n"
+                                # Append tool result to full_response for memory
+                                full_response += f"\n\n[Executed: {extracted_intent}]\n{tool_result}"
+                except Exception as e:
+                    logger.warning(f"Failed to auto-execute intent from assistant response: {e}", exc_info=True)
+                    # Continue without failing the whole response
             
             # Save to memory after streaming completes
             if task_message and full_response:

@@ -24,7 +24,6 @@ class Config:
     MAX_CONSECUTIVE_AUTO_REPLY: int = int(
         os.getenv("MAX_CONSECUTIVE_AUTO_REPLY", ""))
     WORK_DIR: str = os.getenv("WORK_DIR", "")
-
     @classmethod
     def validate(cls) -> bool:
         """Validate required configuration"""
@@ -40,20 +39,20 @@ class Config:
             "config_list": [
                 {
                     "model": "gpt-4o",
-                    "api_version": "2024-11-20",
+                    "api_version": "2024-12-01-preview",
                     "temprature": 0,
                     "api_key": cls.OPENAI_API_KEY,
                     "azure_endpoint": cls.AZURE_OPENAI_ENDPOINT
                 },
                 {
-                    "model": "o3-mini",
-                    "api_version": "2024-11-20",
+                    "model": "gpt-4o",
+                    "api_version": "2024-12-01-preview",
                     "api_key": cls.OPENAI_API_KEY,
                 },
                 {
                     "model": "gpt-4o",
                     "temprature": 1,
-                    "api_version": "2024-11-20",
+                    "api_version": "2024-12-01-preview",
                     "api_key": cls.OPENAI_API_KEY,
                     "azure_endpoint": cls.AZURE_OPENAI_ENDPOINT
                 }

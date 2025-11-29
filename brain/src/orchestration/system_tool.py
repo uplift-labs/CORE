@@ -7,6 +7,7 @@ to execute system-level tasks through the SystemAgent.
 import json
 import asyncio
 import logging
+import re
 from typing import Optional, List, Dict, Any
 from autogen_core import CancellationToken
 from autogen_agentchat.messages import TextMessage
@@ -110,6 +111,37 @@ def set_user_id(user_id: Optional[str]) -> None:
     # Clear cache when user changes to force refresh
     if user_id in _user_agents_cache:
         del _user_agents_cache[user_id]
+
+
+def extract_intent_from_text(text: str) -> Optional[str]:
+    """
+    Extract intent from text that contains execute_system_intent function calls.
+    
+    Handles patterns like:
+    - execute_system_intent(intent="open resume")
+    - execute_system_intent(intent='open resume')
+    - execute_system_intent(intent="open resume")
+    
+    Returns the extracted intent string, or None if no match found.
+    """
+    if not text or not isinstance(text, str):
+        return None
+    
+    # Pattern to match execute_system_intent(intent="...") or execute_system_intent(intent='...')
+    patterns = [
+        r'execute_system_intent\s*\(\s*intent\s*=\s*["\']([^"\']+)["\']\s*\)',
+        r'execute_system_intent\s*\(\s*["\']([^"\']+)["\']\s*\)',  # execute_system_intent("intent")
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            intent = match.group(1).strip()
+            if intent:
+                logger.debug(f"Extracted intent from text: {intent}")
+                return intent
+    
+    return None
 
 
 def _send_http_request(access_url: str, payload: Dict[str, Any], headers: Dict[str, str]) -> str:
@@ -299,10 +331,12 @@ async def execute_system_intent(intent: str | dict | None = None) -> str:
 
     This tool takes a user's intent and passes it to the SystemAgent
     for execution. It supports both plain strings and structured JSON calls.
+    Also automatically extracts intent from text containing function call syntax.
 
     Args:
-        intent: Either a string (e.g. "open resume folder") or
-                a dict (e.g. { "intent": "open resume folder" }).
+        intent: Either a string (e.g. "open resume folder"), 
+                a dict (e.g. { "intent": "open resume folder" }),
+                or text containing execute_system_intent(intent="...") syntax.
 
     Returns:
         str: The response from the SystemAgent after processing the intent.
@@ -311,6 +345,14 @@ async def execute_system_intent(intent: str | dict | None = None) -> str:
         # Handle structured tool call input from model
         if isinstance(intent, dict):
             intent = intent.get("intent") or intent.get("intent")
+
+        # If intent is a string, check if it contains function call syntax
+        if isinstance(intent, str):
+            # Try to extract intent from function call syntax
+            extracted_intent = extract_intent_from_text(intent)
+            if extracted_intent:
+                logger.info(f"Extracted intent from function call syntax: {extracted_intent}")
+                intent = extracted_intent
 
         if not intent:
             logger.warning("execute_system_intent called with no intent")
